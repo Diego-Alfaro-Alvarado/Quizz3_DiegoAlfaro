@@ -34,7 +34,7 @@ class Grupo extends Model
 
     public function docentes(): BelongsToMany
     {
-        return $this->belongsToMany(Docente::class, 'docente_grupo')->withTimestamps();
+        return $this->belongsToMany(Docente::class, 'grupo_docente')->withTimestamps();
     }
 
     public function estudiantes(): BelongsToMany
@@ -64,12 +64,26 @@ class Grupo extends Model
         $this->estudiantes()->updateExistingPivot($estudiante->id, ['nota' => $nota]);
     }
 
-    public function cumpleReglas(): bool
+    public function puedeAbrirse(): bool
     {
         $docentes = $this->docentes()->count();
 
         return $docentes >= self::MIN_DOCENTES
             && $docentes <= self::MAX_DOCENTES
             && $this->estudiantes()->count() >= self::MIN_ESTUDIANTES;
+    }
+
+    public function abrir(): void
+    {
+        if (! $this->puedeAbrirse()) {
+            throw new DomainException('El grupo necesita de 1 a 2 docentes y al menos 15 estudiantes para abrirse.');
+        }
+
+        $this->update(['abierto' => true]);
+    }
+
+    public function cumpleReglas(): bool
+    {
+        return $this->puedeAbrirse();
     }
 }
